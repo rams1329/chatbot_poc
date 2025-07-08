@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyundai Mobis Accessories API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .server-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #2a5298;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .endpoints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .endpoint {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .endpoint:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .method {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .endpoint-url {
+            background: #f1f3f4;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .test-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .response-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .response-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .response-content {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .search-section {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .model-select {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 Hyundai Mobis Accessories API</h1>
+            <p>Dynamic Real-time Data Integration</p>
+            <div class="server-info" id="serverInfo">
+                <div>Server: <span id="serverUrl">Loading...</span></div>
+                <div>Models: <span id="supportedModels">Loading...</span></div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- Dynamic Search Section -->
+            <div class="search-section">
+                <h3>🔍 Search Accessories</h3>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search for accessories (e.g., chrome, bumper, seat cover)">
+                <select class="model-select" id="modelSelect">
+                    <option value="">All Models</option>
+                </select>
+                <button class="test-btn" onclick="performSearch()" style="width: auto; margin-left: 10px;">Search</button>
+            </div>
+
+            <!-- Dynamic Endpoints Section -->
+            <div class="section">
+                <h2>📊 API Endpoints</h2>
+                <div class="endpoints-grid" id="endpointsGrid">
+                    <!-- Endpoints will be loaded dynamically -->
+                </div>
+            </div>
+            
+            <div id="responseSection" class="response-section">
+                <div class="response-container">
+                    <div class="response-header">
+                        <h3 id="responseTitle">API Response</h3>
+                        <button onclick="clearResponse()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px;">Clear</button>
+                    </div>
+                    <div id="responseContent" class="response-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let serverPort = window.location.port || '3000';
+        let baseUrl = `${window.location.protocol}//${window.location.hostname}:${serverPort}`;
+        let serverInfo = {};
+
+        // Initialize the dashboard
+        async function initializeDashboard() {
+            try {
+                // Get server info
+                const response = await fetch(`${baseUrl}/`);
+                serverInfo = await response.json();
+                
+                if (serverInfo.success) {
+                    updateServerInfo(serverInfo.data);
+                    loadModels();
+                    generateEndpoints();
+                }
+            } catch (error) {
+                console.error('Failed to initialize dashboard:', error);
+                document.getElementById('serverInfo').innerHTML = '<div style="color: #ff6b6b;">⚠️ Server connection failed</div>';
+            }
+        }
+
+        // Update server information
+        function updateServerInfo(data) {
+            document.getElementById('serverUrl').textContent = data.server || baseUrl;
+            document.getElementById('supportedModels').textContent = data.supportedModels?.join(', ') || 'Loading...';
+        }
+
+        // Load available models
+        async function loadModels() {
+            try {
+                const response = await fetch(`${baseUrl}/api/models`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const modelSelect = document.getElementById('modelSelect');
+                    data.data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model;
+                        option.textContent = model.toUpperCase();
+                        modelSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load models:', error);
+            }
+        }
+
+        // Generate dynamic endpoints
+        function generateEndpoints() {
+            const endpointsGrid = document.getElementById('endpointsGrid');
+            const endpoints = [
+                {
+                    title: 'Accessory Categories',
+                    url: '/api/categories/types',
+                    description: 'Get all accessory categories (Interiors, Exteriors, Electronics, Common)'
+                },
+                {
+                    title: 'Accessory Subtypes',
+                    url: '/api/categories/subtypes',
+                    description: 'Get all accessory subcategories'
+                },
+                {
+                    title: 'Available Models',
+                    url: '/api/models',
+                    description: 'Get list of supported Hyundai models'
+                },
+                {
+                    title: 'i20 Accessories',
+                    url: '/api/models/i20/accessories',
+                    description: 'Get all accessories for Hyundai i20'
+                },
+                {
+                    title: 'Creta Accessories',
+                    url: '/api/models/creta/accessories',
+                    description: 'Get all accessories for Hyundai Creta'
+                },
+                {
+                    title: 'Available States',
+                    url: '/api/states',
+                    description: 'Get states where accessories are available'
+                },
+                {
+                    title: 'Distributor States',
+                    url: '/api/distributors/states',
+                    description: 'Get distributor state information'
+                },
+                {
+                    title: 'Search Demo',
+                    url: '/api/search?q=chrome',
+                    description: 'Search for chrome accessories across all models'
+                }
+            ];
+
+            endpoints.forEach(endpoint => {
+                const endpointDiv = document.createElement('div');
+                endpointDiv.className = 'endpoint';
+                endpointDiv.innerHTML = `
+                    <h3>${endpoint.title}</h3>
+                    <div class="endpoint-url">
+                        <span class="method">GET</span>
+                        ${endpoint.url}
+                    </div>
+                    <p style="margin: 10px 0; color: #666; font-size: 0.9rem;">${endpoint.description}</p>
+                    <button class="test-btn" onclick="testAPI('${endpoint.url}', '${endpoint.title}')">
+                        Test Endpoint
+                    </button>
+                `;
+                endpointsGrid.appendChild(endpointDiv);
+            });
+        }
+
+        // Test API endpoint
+        async function testAPI(endpoint, title) {
+            const responseSection = document.getElementById('responseSection');
+            const responseTitle = document.getElementById('responseTitle');
+            const responseContent = document.getElementById('responseContent');
+            
+            responseSection.style.display = 'block';
+            responseTitle.textContent = `${title} - Response`;
+            responseContent.innerHTML = '<div class="loading">Loading...</div>';
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${baseUrl}${endpoint}`);
+                const endTime = Date.now();
+                const data = await response.json();
+                
+                const statusColor = response.ok ? '#28a745' : '#dc3545';
+                const responseTime = endTime - startTime;
+                
+                responseContent.innerHTML = `
+                    <div style="margin-bottom: 15px; padding: 10px; background: ${statusColor}; color: white; border-radius: 5px;">
+                        Status: ${response.status} ${response.statusText} (${responseTime}ms)
+                    </div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                responseContent.innerHTML = `
+                    <div style="margin-bottom: 15px; padding: 10px; background: #dc3545; color: white; border-radius: 5px;">
+                        Error: ${error.message}
+                    </div>
+                    <pre>Failed to fetch data from server</pre>
+                `;
+            }
+            
+            responseSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Perform search
+        async function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const selectedModel = document.getElementById('modelSelect').value;
+            
+            if (!searchTerm) {
+                alert('Please enter a search term');
+                return;
+            }
+            
+            let searchUrl = `/api/search?q=${encodeURIComponent(searchTerm)}`;
+            if (selectedModel) {
+                searchUrl += `&model=${selectedModel}`;
+            }
+            
+            await testAPI(searchUrl, `Search: "${searchTerm}"`);
+        }
+
+        // Clear response
+        function clearResponse() {
+            document.getElementById('responseSection').style.display = 'none';
+        }
+
+        // Initialize dashboard when page loads
+        window.addEventListener('load', initializeDashboard);
+    </script>
+</body>
+</html>

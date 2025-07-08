@@ -1,0 +1,74 @@
+### Test Server Health
+GET http://localhost:3000/health
+
+### Test Home Page
+GET http://localhost:3000/
+
+### ========== PRODUCT ENDPOINTS ==========
+
+### Test All Genuine Accessories
+GET http://localhost:3000/api/products/genuine-accessories
+
+### Test New i20 Accessories
+GET http://localhost:3000/api/products/new-i20
+
+### Test New Creta Accessories
+GET http://localhost:3000/api/products/new-creta
+
+### Test Specific Accessory - New i20 Lower Bumper Garnish
+GET http://localhost:3000/api/products/new-i20/123/lower-bumper-garnish
+
+### Test Specific Accessory - New i20 Tail Lamp Garnish
+GET http://localhost:3000/api/products/new-i20/456/tail-lamp-garnish-black
+
+### Test Specific Accessory - New i20 Trunk Sill Guard
+GET http://localhost:3000/api/products/new-i20/789/trunk-sill-guard
+
+### Test Specific Accessory - New i20 Sunshade
+GET http://localhost:3000/api/products/new-i20/101/sunshade-row-ab
+
+### Test Specific Accessory - New Creta Front Bumper Bezel
+GET http://localhost:3000/api/products/hyundai-new-creta/201/front-bumper-bezel
+
+### Test Specific Accessory - New Creta Door Handle Chrome
+GET http://localhost:3000/api/products/hyundai-new-creta/202/door-handle-chrome
+
+### Test Specific Accessory - New Creta Wheel Arc
+GET http://localhost:3000/api/products/hyundai-new-creta/203/wheel-arc
+
+### Test Specific Accessory - New Creta Bumper Corner Protector
+GET http://localhost:3000/api/products/hyundai-new-creta/204/bumper-corner-protector-black
+
+### ========== SERVICE ENDPOINTS ==========
+
+### Test All Accessory Types
+GET http://localhost:3000/api/services/accessory-types
+
+### Test All Accessory Subtypes
+GET http://localhost:3000/api/services/accessory-subtypes
+
+### Test Accessories by Model and Year - i20 2024
+GET http://localhost:3000/api/services/accessories-by-model?modelId=i20&year=2024
+
+### Test Accessories by Model and Year - Creta 2024
+GET http://localhost:3000/api/services/accessories-by-model?modelId=creta&year=2024
+
+### Test Accessories by Model and Year - i20 2023
+GET http://localhost:3000/api/services/accessories-by-model?modelId=i20&year=2023
+
+### Test Available States
+GET http://localhost:3000/api/services/states
+
+### Test Distributor States
+GET http://localhost:3000/api/services/distributor-states
+
+### ========== ERROR TESTING ==========
+
+### Test Missing Parameters
+GET http://localhost:3000/api/services/accessories-by-model?modelId=i20
+
+### Test Invalid Endpoint
+GET http://localhost:3000/api/invalid-endpoint
+
+### Test Invalid Product Details
+GET http://localhost:3000/api/products/invalid-model/123/invalid-accessory
