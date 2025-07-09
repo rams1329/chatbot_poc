@@ -61,10 +61,40 @@
             animation: pulse 2s infinite;
         }
 
+        .status-indicator.offline {
+            background: #ff9800;
+        }
+
+        .status-indicator.empty {
+            background: #6c757d;
+        }
+
+        .status-indicator.error {
+            background: #f44336;
+        }
+
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
+        }
+
+        .reset-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 5px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-button:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .chat-messages {
@@ -146,6 +176,14 @@
             font-weight: bold;
         }
 
+        .tool-indicator.offline {
+            background: #ff9800;
+        }
+
+        .tool-indicator.empty {
+            background: #6c757d;
+        }
+
         .chat-input-container {
             padding: 20px;
             background: white;
@@ -203,37 +241,6 @@
             box-shadow: none;
         }
 
-        .typing-indicator {
-            display: none;
-            padding: 15px 20px;
-            background: white;
-            border-radius: 18px;
-            border-bottom-left-radius: 8px;
-            border: 1px solid #e0e0e0;
-            max-width: 70%;
-        }
-
-        .typing-dots {
-            display: flex;
-            gap: 4px;
-        }
-
-        .typing-dot {
-            width: 8px;
-            height: 8px;
-            background: #667eea;
-            border-radius: 50%;
-            animation: typing 1.4s infinite;
-        }
-
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-10px); }
-        }
-
         .welcome-message {
             text-align: center;
             color: #666;
@@ -265,22 +272,35 @@
             border-color: #667eea;
         }
 
-        .reset-button {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 15px;
-            padding: 5px 12px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .typing-indicator {
+            display: none;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 18px;
+            border-bottom-left-radius: 8px;
+            border: 1px solid #e0e0e0;
+            max-width: 70%;
         }
 
-        .reset-button:hover {
-            background: rgba(255, 255, 255, 0.3);
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
         }
     </style>
 </head>
@@ -290,7 +310,7 @@
             <button class="reset-button" onclick="resetConversation()">🔄 Reset</button>
             <div class="status-indicator" id="statusIndicator"></div>
             <h1>🚗 Hyundai Accessories Assistant</h1>
-            <p>Powered by Gemini AI & Live Data</p>
+            <p>Dynamic API Integration (2018+ Models)</p>
         </div>
         
         <div class="chat-messages" id="chatMessages">
@@ -298,12 +318,12 @@
                 <p>👋 Welcome! I'm your Hyundai accessories assistant.</p>
                 <p>Tell me your car model and year to get started!</p>
                 <div class="quick-actions">
-                    <div class="quick-action" onclick="sendQuickMessage('I have an i20 2024')">i20 2024</div>
-                    <div class="quick-action" onclick="sendQuickMessage('Show me Creta accessories')">Creta accessories</div>
-                    <div class="quick-action" onclick="sendQuickMessage('Alcazar 2023')">Alcazar 2023</div>
-                    <div class="quick-action" onclick="sendQuickMessage('Venue accessories')">Venue accessories</div>
-                    <div class="quick-action" onclick="sendQuickMessage('Aura 2024')">Aura 2024</div>
-                    <div class="quick-action" onclick="sendQuickMessage('Nios accessories')">Nios accessories</div>
+                    <div class="quick-action" onclick="sendQuickMessage('i20 2018')">i20 2018</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Creta 2019')">Creta 2019</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Venue 2020')">Venue 2020</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Aura 2021')">Aura 2021</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Alcazar 2022')">Alcazar 2022</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Nios 2023')">Nios 2023</div>
                 </div>
             </div>
         </div>
@@ -313,7 +333,7 @@
                 <textarea 
                     id="messageInput" 
                     class="chat-input" 
-                    placeholder="Type your message... (e.g., 'I have an i20 2024')"
+                    placeholder="Type your message... (e.g., 'i20 2018')"
                     rows="1"
                 ></textarea>
                 <button id="sendButton" class="send-button" onclick="sendMessage()">
@@ -324,20 +344,17 @@
     </div>
 
     <script>
-        // Global variables
         let isTyping = false;
         const messagesContainer = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
         const statusIndicator = document.getElementById('statusIndicator');
 
-        // Initialize the chat
         document.addEventListener('DOMContentLoaded', function() {
             checkServerStatus();
             setupEventListeners();
         });
 
-        // Setup event listeners
         function setupEventListeners() {
             messageInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -352,25 +369,22 @@
             });
         }
 
-        // Check server status - UPDATED WITH RELATIVE URL
         async function checkServerStatus() {
             try {
                 const response = await fetch('/api/health');
                 const data = await response.json();
                 
                 if (data.status === 'healthy') {
-                    statusIndicator.style.background = '#4CAF50';
-                    console.log('✅ Server is healthy');
+                    statusIndicator.className = 'status-indicator';
                 } else {
-                    statusIndicator.style.background = '#ff9800';
+                    statusIndicator.className = 'status-indicator error';
                 }
             } catch (error) {
-                statusIndicator.style.background = '#f44336';
+                statusIndicator.className = 'status-indicator error';
                 console.error('❌ Server health check failed:', error);
             }
         }
 
-        // Send message function - UPDATED WITH RELATIVE URL
         async function sendMessage() {
             const message = messageInput.value.trim();
             if (!message || isTyping) return;
@@ -390,16 +404,8 @@
                     body: JSON.stringify({ message: message })
                 });
 
-                // Check if response is ok before parsing JSON
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                // Check content type before parsing
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    throw new Error(`Expected JSON, got: ${text.substring(0, 100)}...`);
                 }
 
                 const data = await response.json();
@@ -410,6 +416,8 @@
                     addMessage(data.response, 'bot', {
                         usedTool: data.usedTool,
                         hasLiveData: data.hasLiveData,
+                        isOffline: data.isOffline,
+                        isEmpty: data.isEmpty,
                         timestamp: data.timestamp
                     });
                 } else {
@@ -423,13 +431,11 @@
             }
         }
 
-        // Quick message function
         function sendQuickMessage(message) {
             messageInput.value = message;
             sendMessage();
         }
 
-        // Add message to chat
         function addMessage(content, sender, metadata = {}) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
@@ -450,11 +456,21 @@
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(contentDiv);
             
-            if (metadata.usedTool || metadata.hasLiveData || metadata.timestamp) {
+            if (metadata.usedTool || metadata.hasLiveData || metadata.isOffline || metadata.isEmpty || metadata.timestamp) {
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'message-info';
                 
-                if (metadata.hasLiveData) {
+                if (metadata.isOffline) {
+                    const offlineSpan = document.createElement('span');
+                    offlineSpan.className = 'tool-indicator offline';
+                    offlineSpan.textContent = '⚠️ Offline Mode';
+                    infoDiv.appendChild(offlineSpan);
+                } else if (metadata.isEmpty) {
+                    const emptySpan = document.createElement('span');
+                    emptySpan.className = 'tool-indicator empty';
+                    emptySpan.textContent = '📭 No Data Found';
+                    infoDiv.appendChild(emptySpan);
+                } else if (metadata.hasLiveData) {
                     const toolSpan = document.createElement('span');
                     toolSpan.className = 'tool-indicator';
                     toolSpan.textContent = '🔴 Live Data';
@@ -474,24 +490,15 @@
             scrollToBottom();
         }
 
-        // Format message content
         function formatMessageContent(content) {
-            // Convert line breaks to HTML
             content = content.replace(/\n/g, '<br>');
-            
-            // Make model names bold
             content = content.replace(/\b(i20|creta|alcazar|venue|aura|nios)\b/gi, '<strong>$1</strong>');
-            
-            // Make prices stand out
             content = content.replace(/₹[\d,]+/g, '<strong style="color: #4CAF50;">$&</strong>');
-            
-            // Make categories bold
             content = content.replace(/\b(Interiors|Exteriors|Electronics|Common)\b/gi, '<strong style="color: #667eea;">$1</strong>');
-            
+            content = content.replace(/\b(20\d{2})\b/g, '<strong style="color: #ff6b6b;">$1</strong>');
             return content;
         }
 
-        // Show typing indicator
         function showTypingIndicator() {
             isTyping = true;
             sendButton.disabled = true;
@@ -521,7 +528,6 @@
             scrollToBottom();
         }
 
-        // Hide typing indicator
         function hideTypingIndicator() {
             isTyping = false;
             sendButton.disabled = false;
@@ -532,12 +538,10 @@
             }
         }
 
-        // Scroll to bottom
         function scrollToBottom() {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        // Reset conversation - UPDATED WITH RELATIVE URL
         async function resetConversation() {
             try {
                 const response = await fetch('/api/reset', { method: 'POST' });
@@ -547,12 +551,12 @@
                             <p>👋 Conversation reset! Let's start fresh.</p>
                             <p>Tell me your car model and year to get started!</p>
                             <div class="quick-actions">
-                                <div class="quick-action" onclick="sendQuickMessage('I have an i20 2024')">i20 2024</div>
-                                <div class="quick-action" onclick="sendQuickMessage('Show me Creta accessories')">Creta accessories</div>
-                                <div class="quick-action" onclick="sendQuickMessage('Alcazar 2023')">Alcazar 2023</div>
-                                <div class="quick-action" onclick="sendQuickMessage('Venue accessories')">Venue accessories</div>
-                                <div class="quick-action" onclick="sendQuickMessage('Aura 2024')">Aura 2024</div>
-                                <div class="quick-action" onclick="sendQuickMessage('Nios accessories')">Nios accessories</div>
+                                <div class="quick-action" onclick="sendQuickMessage('i20 2018')">i20 2018</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Creta 2019')">Creta 2019</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Venue 2020')">Venue 2020</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Aura 2021')">Aura 2021</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Alcazar 2022')">Alcazar 2022</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Nios 2023')">Nios 2023</div>
                             </div>
                         </div>
                     `;
@@ -563,8 +567,7 @@
             }
         }
 
-        // Periodic health check
-        setInterval(checkServerStatus, 30000); // Check every 30 seconds
+        setInterval(checkServerStatus, 30000);
     </script>
 </body>
 </html>
