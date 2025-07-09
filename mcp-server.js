@@ -5,7 +5,7 @@ const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio
 const { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
 const axios = require('axios');
 
-class HyundaiConversationalAPIService {
+class HyundaiStreamlinedAPIService {
     constructor(baseURL) {
         this.baseURL = baseURL;
         this.axiosInstance = axios.create({
@@ -18,7 +18,7 @@ class HyundaiConversationalAPIService {
             }
         });
 
-        // Dynamic model mappings from API data
+        // Dynamic model mappings
         this.modelMappings = {
             'alcazar': 34,
             'i20': 35,
@@ -28,14 +28,17 @@ class HyundaiConversationalAPIService {
             'nios': 39
         };
 
-        // Session state management
+        // Conversation state management
         this.conversationState = {
             selectedModel: null,
             selectedModelId: null,
+            selectedYear: null,
+            allAccessories: [],
+            availableTypes: [],
             selectedType: null,
-            selectedTypeId: null,
+            availableSubTypes: [],
             selectedSubType: null,
-            selectedSubTypeId: null,
+            filteredAccessories: [],
             currentStep: 'model_selection'
         };
 
@@ -52,7 +55,7 @@ class HyundaiConversationalAPIService {
 
         this.axiosInstance.interceptors.response.use(
             (response) => {
-                console.error(`✅ API Success: ${response.status} ${response.config.url}`);
+                console.error(`✅ API Success: ${response.status} ${response.config.url} - ${response.data.length} items`);
                 return response;
             },
             (error) => {
@@ -62,180 +65,253 @@ class HyundaiConversationalAPIService {
         );
     }
 
-    // Step 1: Handle car model selection
-    async handleModelSelection(userInput) {
+    // Step 1: Handle model and year selection
+    async handleModelYearSelection(userInput) {
         const lowerInput = userInput.toLowerCase();
         const availableModels = Object.keys(this.modelMappings);
         
         // Check if user mentioned a valid model
         const selectedModel = availableModels.find(model => lowerInput.includes(model));
         
+        // Extract year from input (default to 2024 if not specified)
+        const yearMatch = userInput.match(/20\d{2}/);
+        const selectedYear = yearMatch ? parseInt(yearMatch[0]) : 2024;
+        
         if (selectedModel) {
             this.conversationState.selectedModel = selectedModel;
             this.conversationState.selectedModelId = this.modelMappings[selectedModel];
+            this.conversationState.selectedYear = selectedYear;
             this.conversationState.currentStep = 'type_selection';
             
-            // Get all types and present to user
-            const types = await this.getAllAccessoryTypes();
+            // Fetch all accessories for this model and year
+            const accessoriesData = await this.fetchAllAccessories(selectedModel, selectedYear);
+            this.conversationState.allAccessories = accessoriesData;
+            
+            // Extract unique types from the response
+            const uniqueTypes = this.extractUniqueTypes(accessoriesData);
+            this.conversationState.availableTypes = uniqueTypes;
             
             return {
                 success: true,
                 step: 'type_selection',
-                message: `Great! You selected ${selectedModel.toUpperCase()}. Now please choose an accessory type:`,
+                message: `Perfect! You selected ${selectedModel.toUpperCase()} (${selectedYear}). I found ${accessoriesData.length} accessories. Please choose an accessory type:`,
                 selectedModel: selectedModel,
-                availableTypes: types.data.map(type => ({
-                    id: type.id,
-                    name: type.description,
-                    displaySeq: type.displaySeq
-                })),
-                nextAction: "Please select a type by saying the type name (e.g., 'Interiors', 'Exteriors', 'Electronics', 'Common')"
+                selectedYear: selectedYear,
+                totalAccessories: accessoriesData.length,
+                availableTypes: uniqueTypes,
+                nextAction: "Please select a type from the list above (e.g., 'Interiors', 'Exteriors', 'Electronics', 'Common')"
             };
         } else {
             return {
                 success: false,
                 step: 'model_selection',
-                message: "Please specify a valid Hyundai model. Available models are:",
+                message: "Please specify a valid Hyundai model and optionally a year. Available models are:",
                 availableModels: availableModels.map(model => model.toUpperCase()),
-                nextAction: "Please say the car model name (e.g., 'i20', 'Creta', 'Alcazar', 'Venue', 'Aura', 'Nios')"
+                nextAction: "Please say the car model name and year (e.g., 'i20 2024', 'Creta 2023', or just 'Alcazar')"
             };
         }
     }
 
-    // Step 2: Handle accessory type selection
+    // Step 2: Handle type selection
     async handleTypeSelection(userInput) {
-        const types = await this.getAllAccessoryTypes();
         const lowerInput = userInput.toLowerCase();
         
-        const selectedType = types.data.find(type => 
-            lowerInput.includes(type.description.toLowerCase())
+        const selectedType = this.conversationState.availableTypes.find(type => 
+            lowerInput.includes(type.name.toLowerCase())
         );
         
         if (selectedType) {
-            this.conversationState.selectedType = selectedType.description;
-            this.conversationState.selectedTypeId = selectedType.id;
+            this.conversationState.selectedType = selectedType.name;
             this.conversationState.currentStep = 'subtype_selection';
             
-            // Get subtypes and filter by selected type
-            const subtypes = await this.getRelevantSubTypes(selectedType.description);
+            // Filter accessories by selected type and extract subtypes
+            const typeFilteredAccessories = this.conversationState.allAccessories.filter(acc => 
+                acc.type && acc.type.toLowerCase() === selectedType.name.toLowerCase()
+            );
+            
+            const uniqueSubTypes = this.extractUniqueSubTypes(typeFilteredAccessories);
+            this.conversationState.availableSubTypes = uniqueSubTypes;
             
             return {
                 success: true,
                 step: 'subtype_selection',
-                message: `Perfect! You selected ${selectedType.description} for ${this.conversationState.selectedModel.toUpperCase()}. Now choose a specific category:`,
+                message: `Excellent! You selected ${selectedType.name} for ${this.conversationState.selectedModel.toUpperCase()}. Found ${typeFilteredAccessories.length} items. Now choose a subcategory:`,
                 selectedModel: this.conversationState.selectedModel,
-                selectedType: selectedType.description,
-                availableSubTypes: subtypes,
+                selectedType: selectedType.name,
+                availableSubTypes: uniqueSubTypes,
                 nextAction: "Please select a subcategory from the list above"
             };
         } else {
-            const availableTypes = types.data.map(type => type.description);
             return {
                 success: false,
                 step: 'type_selection',
                 message: "Please select a valid accessory type:",
-                availableTypes: availableTypes,
+                availableTypes: this.conversationState.availableTypes,
                 nextAction: "Please say one of the type names listed above"
             };
         }
     }
 
-    // Step 3: Handle subtype selection and show final results
+    // Step 3: Handle subtype selection and show products
     async handleSubTypeSelection(userInput) {
-        const subtypes = await this.getAllSubTypes();
         const lowerInput = userInput.toLowerCase();
         
-        const selectedSubType = subtypes.data.find(subtype => 
-            lowerInput.includes(subtype.description.toLowerCase())
+        const selectedSubType = this.conversationState.availableSubTypes.find(subtype => 
+            lowerInput.includes(subtype.name.toLowerCase())
         );
         
         if (selectedSubType) {
-            this.conversationState.selectedSubType = selectedSubType.description;
-            this.conversationState.selectedSubTypeId = selectedSubType.id;
-            this.conversationState.currentStep = 'show_results';
+            this.conversationState.selectedSubType = selectedSubType.name;
+            this.conversationState.currentStep = 'show_products';
             
-            // Get model accessories and filter by type and subtype
-            const accessories = await this.getFilteredAccessories();
+            // Filter accessories by type and subtype
+            const filteredAccessories = this.conversationState.allAccessories.filter(acc => 
+                acc.type && acc.type.toLowerCase() === this.conversationState.selectedType.toLowerCase() &&
+                acc.subType && acc.subType.toLowerCase() === selectedSubType.name.toLowerCase()
+            );
+            
+            this.conversationState.filteredAccessories = filteredAccessories;
             
             return {
                 success: true,
-                step: 'show_results',
-                message: `Excellent! Here are the ${selectedSubType.description} accessories in ${this.conversationState.selectedType} category for ${this.conversationState.selectedModel.toUpperCase()}:`,
+                step: 'show_products',
+                message: `Perfect! Here are the ${selectedSubType.name} accessories in ${this.conversationState.selectedType} category for ${this.conversationState.selectedModel.toUpperCase()}:`,
                 selectedModel: this.conversationState.selectedModel,
                 selectedType: this.conversationState.selectedType,
-                selectedSubType: selectedSubType.description,
-                accessories: accessories,
-                nextAction: "You can ask for more details about any accessory or start over with a new search"
+                selectedSubType: selectedSubType.name,
+                totalProducts: filteredAccessories.length,
+                accessories: this.formatAccessoriesForDisplay(filteredAccessories),
+                nextAction: "You can ask for details about any specific accessory or start a new search"
             };
         } else {
-            const relevantSubtypes = await this.getRelevantSubTypes(this.conversationState.selectedType);
             return {
                 success: false,
                 step: 'subtype_selection',
                 message: "Please select a valid subcategory:",
-                availableSubTypes: relevantSubtypes,
+                availableSubTypes: this.conversationState.availableSubTypes,
                 nextAction: "Please say one of the subcategory names listed above"
             };
         }
     }
 
-    // Get relevant subtypes based on selected type
-    async getRelevantSubTypes(selectedType) {
-        try {
-            // Get model accessories to see which subtypes are actually available
-            const modelData = await this.getAccessoriesByModel(this.conversationState.selectedModel);
-            
-            // Filter accessories by selected type
-            const typeFilteredAccessories = modelData.data.filter(acc => 
-                acc.type && acc.type.toLowerCase() === selectedType.toLowerCase()
-            );
-            
-            // Extract unique subtypes from filtered accessories
-            const uniqueSubTypes = [...new Set(typeFilteredAccessories.map(acc => acc.subType))];
-            
-            return uniqueSubTypes.filter(subType => subType).map(subType => ({
-                name: subType,
-                count: typeFilteredAccessories.filter(acc => acc.subType === subType).length
-            }));
-        } catch (error) {
-            console.error('Error getting relevant subtypes:', error);
-            return [];
+    // Step 4: Handle product detail requests
+    async handleProductDetails(userInput) {
+        const lowerInput = userInput.toLowerCase();
+        
+        // Check if user is asking for details about a specific product
+        const requestedProduct = this.conversationState.filteredAccessories.find(acc => 
+            lowerInput.includes(acc.accessoryName.toLowerCase().substring(0, 10)) ||
+            lowerInput.includes(acc.id.toString())
+        );
+        
+        if (requestedProduct) {
+            return {
+                success: true,
+                step: 'product_details',
+                message: `Here are the complete details for ${requestedProduct.accessoryName}:`,
+                productDetails: this.formatProductDetails(requestedProduct),
+                nextAction: "You can ask about other products or start a new search"
+            };
+        } else if (lowerInput.includes('start over') || lowerInput.includes('new search')) {
+            this.resetConversation();
+            return {
+                success: true,
+                step: 'model_selection',
+                message: "Let's start fresh! Which Hyundai model and year are you interested in?",
+                availableModels: Object.keys(this.modelMappings).map(model => model.toUpperCase()),
+                nextAction: "Please say the car model name and year"
+            };
+        } else {
+            return {
+                success: true,
+                step: 'show_products',
+                message: "I can show you details about any of the products listed above, or you can start a new search.",
+                availableProducts: this.conversationState.filteredAccessories.map(acc => ({
+                    id: acc.id,
+                    name: acc.accessoryName,
+                    price: acc.mrp
+                })),
+                nextAction: "Say the product name or ID for details, or say 'start over' for a new search"
+            };
         }
     }
 
-    // Get filtered accessories based on conversation state
-    async getFilteredAccessories() {
+    // Fetch all accessories for a model and year
+    async fetchAllAccessories(modelName, year) {
         try {
-            const modelData = await this.getAccessoriesByModel(this.conversationState.selectedModel);
-            
-            let filteredAccessories = modelData.data;
-            
-            // Filter by type
-            if (this.conversationState.selectedType) {
-                filteredAccessories = filteredAccessories.filter(acc => 
-                    acc.type && acc.type.toLowerCase() === this.conversationState.selectedType.toLowerCase()
-                );
-            }
-            
-            // Filter by subtype
-            if (this.conversationState.selectedSubType) {
-                filteredAccessories = filteredAccessories.filter(acc => 
-                    acc.subType && acc.subType.toLowerCase() === this.conversationState.selectedSubType.toLowerCase()
-                );
-            }
-            
-            return filteredAccessories.map(acc => ({
-                id: acc.id,
-                name: acc.accessoryName,
-                code: acc.accessoryCode,
-                price: acc.mrp,
-                type: acc.type,
-                subType: acc.subType,
-                description: acc.body ? acc.body.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : 'No description available'
-            }));
+            const modelId = this.modelMappings[modelName.toLowerCase()];
+            const response = await this.axiosInstance.get(`/service/accessories/getByModelIdYear?modelId=${modelId}&year=${year}`);
+            return response.data;
         } catch (error) {
-            console.error('Error getting filtered accessories:', error);
-            return [];
+            throw new Error(`Failed to fetch accessories for ${modelName}: ${error.message}`);
         }
+    }
+
+    // Extract unique types from accessories data
+    extractUniqueTypes(accessories) {
+        const typesMap = new Map();
+        accessories.forEach(acc => {
+            if (acc.type) {
+                const key = acc.type;
+                if (!typesMap.has(key)) {
+                    typesMap.set(key, {
+                        id: acc.typeId,
+                        name: acc.type,
+                        count: 0
+                    });
+                }
+                typesMap.get(key).count++;
+            }
+        });
+        return Array.from(typesMap.values()).sort((a, b) => b.count - a.count);
+    }
+
+    // Extract unique subtypes from filtered accessories
+    extractUniqueSubTypes(accessories) {
+        const subTypesMap = new Map();
+        accessories.forEach(acc => {
+            if (acc.subType) {
+                const key = acc.subType;
+                if (!subTypesMap.has(key)) {
+                    subTypesMap.set(key, {
+                        id: acc.subTypeId,
+                        name: acc.subType,
+                        count: 0
+                    });
+                }
+                subTypesMap.get(key).count++;
+            }
+        });
+        return Array.from(subTypesMap.values()).sort((a, b) => b.count - a.count);
+    }
+
+    // Format accessories for display
+    formatAccessoriesForDisplay(accessories) {
+        return accessories.map(acc => ({
+            id: acc.id,
+            name: acc.accessoryName,
+            code: acc.accessoryCode,
+            price: acc.mrp,
+            description: acc.body ? acc.body.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : 'No description available',
+            image: acc.image
+        }));
+    }
+
+    // Format complete product details
+    formatProductDetails(product) {
+        return {
+            id: product.id,
+            name: product.accessoryName,
+            code: product.accessoryCode,
+            price: product.mrp,
+            type: product.type,
+            subType: product.subType,
+            fullDescription: product.body ? product.body.replace(/<[^>]*>/g, '') : 'No description available',
+            image: product.image,
+            url: product.url,
+            title: product.title,
+            imageUrl: `https://hyundaimobisin.com/images/accessories/${product.image}`
+        };
     }
 
     // Reset conversation state
@@ -243,62 +319,23 @@ class HyundaiConversationalAPIService {
         this.conversationState = {
             selectedModel: null,
             selectedModelId: null,
+            selectedYear: null,
+            allAccessories: [],
+            availableTypes: [],
             selectedType: null,
-            selectedTypeId: null,
+            availableSubTypes: [],
             selectedSubType: null,
-            selectedSubTypeId: null,
+            filteredAccessories: [],
             currentStep: 'model_selection'
         };
     }
-
-    // API methods
-    async getAllAccessoryTypes() {
-        try {
-            const response = await this.axiosInstance.get('/service/accessories/getAllTypes');
-            return {
-                success: true,
-                data: response.data
-            };
-        } catch (error) {
-            throw new Error(`Failed to fetch accessory types: ${error.message}`);
-        }
-    }
-
-    async getAllSubTypes() {
-        try {
-            const response = await this.axiosInstance.get('/service/accessories/getAllSubTypes');
-            return {
-                success: true,
-                data: response.data
-            };
-        } catch (error) {
-            throw new Error(`Failed to fetch accessory subtypes: ${error.message}`);
-        }
-    }
-
-    async getAccessoriesByModel(modelName, year = 2024) {
-        try {
-            const modelId = this.modelMappings[modelName.toLowerCase()];
-            if (!modelId) {
-                throw new Error(`Model '${modelName}' not supported`);
-            }
-
-            const response = await this.axiosInstance.get(`/service/accessories/getByModelIdYear?modelId=${modelId}&year=${year}`);
-            return {
-                success: true,
-                data: response.data
-            };
-        } catch (error) {
-            throw new Error(`Failed to fetch accessories for ${modelName}: ${error.message}`);
-        }
-    }
 }
 
-const apiService = new HyundaiConversationalAPIService('https://api.hyundaimobisin.com');
+const apiService = new HyundaiStreamlinedAPIService('https://api.hyundaimobisin.com');
 
 const server = new Server(
     {
-        name: 'hyundai-conversational-flow',
+        name: 'hyundai-streamlined-flow',
         version: '1.0.0',
     },
     {
@@ -308,13 +345,13 @@ const server = new Server(
     }
 );
 
-// Tool definitions for conversational flow
+// Tool definitions for streamlined flow
 server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
         tools: [
             {
-                name: 'conversational_flow',
-                description: 'Handle step-by-step conversational flow for accessory selection',
+                name: 'streamlined_conversation',
+                description: 'Handle complete conversational flow with single API endpoint',
                 inputSchema: {
                     type: 'object',
                     properties: {
@@ -332,8 +369,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 },
             },
             {
-                name: 'get_conversation_state',
-                description: 'Get current conversation state and next steps',
+                name: 'get_conversation_status',
+                description: 'Get current conversation state and available options',
                 inputSchema: {
                     type: 'object',
                     properties: {},
@@ -343,7 +380,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     };
 });
 
-// Tool call handler for conversational flow
+// Tool call handler for streamlined flow
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 
@@ -351,11 +388,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         let result;
         
         switch (name) {
-            case 'conversational_flow':
-                result = await handleConversationalFlow(args.userInput, args.action);
+            case 'streamlined_conversation':
+                result = await handleStreamlinedConversation(args.userInput, args.action);
                 break;
                 
-            case 'get_conversation_state':
+            case 'get_conversation_status':
                 result = {
                     currentState: apiService.conversationState,
                     nextStep: getNextStepInstructions()
@@ -388,8 +425,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 });
 
-// Main conversational flow handler
-async function handleConversationalFlow(userInput, action = 'continue') {
+// Main streamlined conversation handler
+async function handleStreamlinedConversation(userInput, action = 'continue') {
     try {
         if (action === 'reset' || action === 'start') {
             apiService.resetConversation();
@@ -399,7 +436,7 @@ async function handleConversationalFlow(userInput, action = 'continue') {
         
         switch (currentStep) {
             case 'model_selection':
-                return await apiService.handleModelSelection(userInput);
+                return await apiService.handleModelYearSelection(userInput);
                 
             case 'type_selection':
                 return await apiService.handleTypeSelection(userInput);
@@ -407,42 +444,22 @@ async function handleConversationalFlow(userInput, action = 'continue') {
             case 'subtype_selection':
                 return await apiService.handleSubTypeSelection(userInput);
                 
-            case 'show_results':
-                // Handle follow-up questions or restart
-                if (userInput.toLowerCase().includes('start over') || userInput.toLowerCase().includes('new search')) {
-                    apiService.resetConversation();
-                    return {
-                        success: true,
-                        step: 'model_selection',
-                        message: "Let's start fresh! Which Hyundai model are you interested in?",
-                        availableModels: Object.keys(apiService.modelMappings).map(model => model.toUpperCase()),
-                        nextAction: "Please say the car model name"
-                    };
-                } else {
-                    return {
-                        success: true,
-                        step: 'show_results',
-                        message: "I can help you with more details or you can start a new search. What would you like to do?",
-                        options: [
-                            "Start over with a new model",
-                            "Ask for more details about specific accessories",
-                            "Search for different accessory types"
-                        ]
-                    };
-                }
+            case 'show_products':
+            case 'product_details':
+                return await apiService.handleProductDetails(userInput);
                 
             default:
                 apiService.resetConversation();
                 return {
                     success: true,
                     step: 'model_selection',
-                    message: "Welcome! Let's find the perfect accessories for your Hyundai. Which model do you have?",
+                    message: "Welcome! Let's find the perfect accessories for your Hyundai. Which model and year do you have?",
                     availableModels: Object.keys(apiService.modelMappings).map(model => model.toUpperCase()),
-                    nextAction: "Please say the car model name (e.g., 'i20', 'Creta', 'Alcazar')"
+                    nextAction: "Please say the car model name and year (e.g., 'i20 2024', 'Creta 2023')"
                 };
         }
     } catch (error) {
-        throw new Error(`Conversational flow error: ${error.message}`);
+        throw new Error(`Streamlined conversation error: ${error.message}`);
     }
 }
 
@@ -451,10 +468,11 @@ function getNextStepInstructions() {
     const currentStep = apiService.conversationState.currentStep;
     
     const instructions = {
-        'model_selection': 'User should specify their Hyundai model name',
+        'model_selection': 'User should specify their Hyundai model name and year',
         'type_selection': 'User should choose from available accessory types',
         'subtype_selection': 'User should select a specific subcategory',
-        'show_results': 'User can ask for details or start over'
+        'show_products': 'User can ask for product details or start over',
+        'product_details': 'User can ask about other products or start new search'
     };
     
     return instructions[currentStep] || 'Unknown step';
@@ -463,7 +481,7 @@ function getNextStepInstructions() {
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error('🚀 Hyundai Conversational Flow MCP Server started successfully');
+    console.error('🚀 Hyundai Streamlined Flow MCP Server started successfully');
 }
 
 main().catch((error) => {

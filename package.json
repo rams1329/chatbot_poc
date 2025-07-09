@@ -4,11 +4,12 @@
   "description": "Hyundai Accessories API Integration with MCP Server",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node gemini-app.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@modelcontextprotocol/sdk": "^1.15.0",
     "axios": "^1.6.0",
     "cors": "^2.8.5",

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hyundai Mobis Accessories API</title>
+    <title>Hyundai Accessories Assistant</title>
     <style>
         * {
             margin: 0;
@@ -13,378 +13,558 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .chat-container {
+            width: 90%;
+            max-width: 800px;
+            height: 85vh;
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
-        .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 30px;
+            padding: 25px;
             text-align: center;
+            position: relative;
         }
 
-        .server-info {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 15px;
-            font-size: 0.9rem;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .section {
-            margin-bottom: 40px;
-        }
-
-        .section h2 {
-            color: #2a5298;
-            margin-bottom: 20px;
+        .chat-header h1 {
             font-size: 1.8rem;
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 10px;
+            margin-bottom: 8px;
         }
 
-        .endpoints-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 1rem;
         }
 
-        .endpoint {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 10px;
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .chat-messages {
+            flex: 1;
             padding: 20px;
-            transition: all 0.3s ease;
+            overflow-y: auto;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
 
-        .endpoint:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
         }
 
-        .method {
-            background: #28a745;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .endpoint-url {
-            background: #f1f3f4;
-            padding: 8px 12px;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
+            color: white;
             font-size: 0.9rem;
-            margin: 10px 0;
-            word-break: break-all;
         }
 
-        .test-btn {
+        .message.bot .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 8px;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 8px;
+        }
+
+        .message-info {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-indicator {
+            background: #4CAF50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: bold;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            min-height: 50px;
+            max-height: 120px;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            outline: none;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            width: 50px;
+            height: 50px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 1.2rem;
             transition: all 0.3s ease;
-            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .test-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .response-section {
-            margin-top: 30px;
+        .send-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .typing-indicator {
             display: none;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 18px;
+            border-bottom-left-radius: 8px;
+            border: 1px solid #e0e0e0;
+            max-width: 70%;
         }
 
-        .response-container {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 10px;
-            padding: 20px;
+        .typing-dots {
+            display: flex;
+            gap: 4px;
         }
 
-        .response-content {
-            background: #ffffff;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 15px;
-            max-height: 400px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-            line-height: 1.4;
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
         }
 
-        .loading {
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .welcome-message {
             text-align: center;
-            padding: 20px;
-            color: #6c757d;
+            color: #666;
+            font-style: italic;
+            margin: 20px 0;
         }
 
-        .search-section {
-            background: #e9ecef;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+            justify-content: center;
         }
 
-        .search-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            margin-bottom: 10px;
+        .quick-action {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .model-select {
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            margin-right: 10px;
+        .quick-action:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .reset-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 5px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-button:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚗 Hyundai Mobis Accessories API</h1>
-            <p>Dynamic Real-time Data Integration</p>
-            <div class="server-info" id="serverInfo">
-                <div>Server: <span id="serverUrl">Loading...</span></div>
-                <div>Models: <span id="supportedModels">Loading...</span></div>
+    <div class="chat-container">
+        <div class="chat-header">
+            <button class="reset-button" onclick="resetConversation()">🔄 Reset</button>
+            <div class="status-indicator" id="statusIndicator"></div>
+            <h1>🚗 Hyundai Accessories Assistant</h1>
+            <p>Powered by Gemini AI & Live Data</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <p>👋 Welcome! I'm your Hyundai accessories assistant.</p>
+                <p>Tell me your car model and year to get started!</p>
+                <div class="quick-actions">
+                    <div class="quick-action" onclick="sendQuickMessage('I have an i20 2024')">i20 2024</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Show me Creta accessories')">Creta accessories</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Alcazar 2023')">Alcazar 2023</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Venue accessories')">Venue accessories</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Aura 2024')">Aura 2024</div>
+                    <div class="quick-action" onclick="sendQuickMessage('Nios accessories')">Nios accessories</div>
+                </div>
             </div>
         </div>
         
-        <div class="content">
-            <!-- Dynamic Search Section -->
-            <div class="search-section">
-                <h3>🔍 Search Accessories</h3>
-                <input type="text" class="search-input" id="searchInput" placeholder="Search for accessories (e.g., chrome, bumper, seat cover)">
-                <select class="model-select" id="modelSelect">
-                    <option value="">All Models</option>
-                </select>
-                <button class="test-btn" onclick="performSearch()" style="width: auto; margin-left: 10px;">Search</button>
-            </div>
-
-            <!-- Dynamic Endpoints Section -->
-            <div class="section">
-                <h2>📊 API Endpoints</h2>
-                <div class="endpoints-grid" id="endpointsGrid">
-                    <!-- Endpoints will be loaded dynamically -->
-                </div>
-            </div>
-            
-            <div id="responseSection" class="response-section">
-                <div class="response-container">
-                    <div class="response-header">
-                        <h3 id="responseTitle">API Response</h3>
-                        <button onclick="clearResponse()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px;">Clear</button>
-                    </div>
-                    <div id="responseContent" class="response-content"></div>
-                </div>
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <textarea 
+                    id="messageInput" 
+                    class="chat-input" 
+                    placeholder="Type your message... (e.g., 'I have an i20 2024')"
+                    rows="1"
+                ></textarea>
+                <button id="sendButton" class="send-button" onclick="sendMessage()">
+                    ➤
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        let serverPort = window.location.port || '3000';
-        let baseUrl = `${window.location.protocol}//${window.location.hostname}:${serverPort}`;
-        let serverInfo = {};
+        // Global variables
+        let isTyping = false;
+        const messagesContainer = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const statusIndicator = document.getElementById('statusIndicator');
 
-        // Initialize the dashboard
-        async function initializeDashboard() {
-            try {
-                // Get server info
-                const response = await fetch(`${baseUrl}/`);
-                serverInfo = await response.json();
-                
-                if (serverInfo.success) {
-                    updateServerInfo(serverInfo.data);
-                    loadModels();
-                    generateEndpoints();
+        // Initialize the chat
+        document.addEventListener('DOMContentLoaded', function() {
+            checkServerStatus();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
                 }
-            } catch (error) {
-                console.error('Failed to initialize dashboard:', error);
-                document.getElementById('serverInfo').innerHTML = '<div style="color: #ff6b6b;">⚠️ Server connection failed</div>';
-            }
-        }
+            });
 
-        // Update server information
-        function updateServerInfo(data) {
-            document.getElementById('serverUrl').textContent = data.server || baseUrl;
-            document.getElementById('supportedModels').textContent = data.supportedModels?.join(', ') || 'Loading...';
-        }
-
-        // Load available models
-        async function loadModels() {
-            try {
-                const response = await fetch(`${baseUrl}/api/models`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    const modelSelect = document.getElementById('modelSelect');
-                    data.data.models.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model;
-                        option.textContent = model.toUpperCase();
-                        modelSelect.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to load models:', error);
-            }
-        }
-
-        // Generate dynamic endpoints
-        function generateEndpoints() {
-            const endpointsGrid = document.getElementById('endpointsGrid');
-            const endpoints = [
-                {
-                    title: 'Accessory Categories',
-                    url: '/api/categories/types',
-                    description: 'Get all accessory categories (Interiors, Exteriors, Electronics, Common)'
-                },
-                {
-                    title: 'Accessory Subtypes',
-                    url: '/api/categories/subtypes',
-                    description: 'Get all accessory subcategories'
-                },
-                {
-                    title: 'Available Models',
-                    url: '/api/models',
-                    description: 'Get list of supported Hyundai models'
-                },
-                {
-                    title: 'i20 Accessories',
-                    url: '/api/models/i20/accessories',
-                    description: 'Get all accessories for Hyundai i20'
-                },
-                {
-                    title: 'Creta Accessories',
-                    url: '/api/models/creta/accessories',
-                    description: 'Get all accessories for Hyundai Creta'
-                },
-                {
-                    title: 'Available States',
-                    url: '/api/states',
-                    description: 'Get states where accessories are available'
-                },
-                {
-                    title: 'Distributor States',
-                    url: '/api/distributors/states',
-                    description: 'Get distributor state information'
-                },
-                {
-                    title: 'Search Demo',
-                    url: '/api/search?q=chrome',
-                    description: 'Search for chrome accessories across all models'
-                }
-            ];
-
-            endpoints.forEach(endpoint => {
-                const endpointDiv = document.createElement('div');
-                endpointDiv.className = 'endpoint';
-                endpointDiv.innerHTML = `
-                    <h3>${endpoint.title}</h3>
-                    <div class="endpoint-url">
-                        <span class="method">GET</span>
-                        ${endpoint.url}
-                    </div>
-                    <p style="margin: 10px 0; color: #666; font-size: 0.9rem;">${endpoint.description}</p>
-                    <button class="test-btn" onclick="testAPI('${endpoint.url}', '${endpoint.title}')">
-                        Test Endpoint
-                    </button>
-                `;
-                endpointsGrid.appendChild(endpointDiv);
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
             });
         }
 
-        // Test API endpoint
-        async function testAPI(endpoint, title) {
-            const responseSection = document.getElementById('responseSection');
-            const responseTitle = document.getElementById('responseTitle');
-            const responseContent = document.getElementById('responseContent');
-            
-            responseSection.style.display = 'block';
-            responseTitle.textContent = `${title} - Response`;
-            responseContent.innerHTML = '<div class="loading">Loading...</div>';
-            
+        // Check server status - UPDATED WITH RELATIVE URL
+        async function checkServerStatus() {
             try {
-                const startTime = Date.now();
-                const response = await fetch(`${baseUrl}${endpoint}`);
-                const endTime = Date.now();
+                const response = await fetch('/api/health');
                 const data = await response.json();
                 
-                const statusColor = response.ok ? '#28a745' : '#dc3545';
-                const responseTime = endTime - startTime;
+                if (data.status === 'healthy') {
+                    statusIndicator.style.background = '#4CAF50';
+                    console.log('✅ Server is healthy');
+                } else {
+                    statusIndicator.style.background = '#ff9800';
+                }
+            } catch (error) {
+                statusIndicator.style.background = '#f44336';
+                console.error('❌ Server health check failed:', error);
+            }
+        }
+
+        // Send message function - UPDATED WITH RELATIVE URL
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isTyping) return;
+
+            addMessage(message, 'user');
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            
+            showTypingIndicator();
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                // Check if response is ok before parsing JSON
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Check content type before parsing
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Expected JSON, got: ${text.substring(0, 100)}...`);
+                }
+
+                const data = await response.json();
                 
-                responseContent.innerHTML = `
-                    <div style="margin-bottom: 15px; padding: 10px; background: ${statusColor}; color: white; border-radius: 5px;">
-                        Status: ${response.status} ${response.statusText} (${responseTime}ms)
-                    </div>
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
-                `;
+                hideTypingIndicator();
+                
+                if (data.success) {
+                    addMessage(data.response, 'bot', {
+                        usedTool: data.usedTool,
+                        hasLiveData: data.hasLiveData,
+                        timestamp: data.timestamp
+                    });
+                } else {
+                    addMessage('Sorry, I encountered an error. Please try again.', 'bot', { error: true });
+                }
                 
             } catch (error) {
-                responseContent.innerHTML = `
-                    <div style="margin-bottom: 15px; padding: 10px; background: #dc3545; color: white; border-radius: 5px;">
-                        Error: ${error.message}
-                    </div>
-                    <pre>Failed to fetch data from server</pre>
-                `;
+                hideTypingIndicator();
+                addMessage(`Connection error: ${error.message}`, 'bot', { error: true });
+                console.error('Chat error:', error);
             }
-            
-            responseSection.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Perform search
-        async function performSearch() {
-            const searchTerm = document.getElementById('searchInput').value.trim();
-            const selectedModel = document.getElementById('modelSelect').value;
-            
-            if (!searchTerm) {
-                alert('Please enter a search term');
-                return;
-            }
-            
-            let searchUrl = `/api/search?q=${encodeURIComponent(searchTerm)}`;
-            if (selectedModel) {
-                searchUrl += `&model=${selectedModel}`;
-            }
-            
-            await testAPI(searchUrl, `Search: "${searchTerm}"`);
+        // Quick message function
+        function sendQuickMessage(message) {
+            messageInput.value = message;
+            sendMessage();
         }
 
-        // Clear response
-        function clearResponse() {
-            document.getElementById('responseSection').style.display = 'none';
+        // Add message to chat
+        function addMessage(content, sender, metadata = {}) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = sender === 'user' ? 'You' : '🤖';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            if (typeof content === 'string') {
+                contentDiv.innerHTML = formatMessageContent(content);
+            } else {
+                contentDiv.textContent = JSON.stringify(content, null, 2);
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            
+            if (metadata.usedTool || metadata.hasLiveData || metadata.timestamp) {
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'message-info';
+                
+                if (metadata.hasLiveData) {
+                    const toolSpan = document.createElement('span');
+                    toolSpan.className = 'tool-indicator';
+                    toolSpan.textContent = '🔴 Live Data';
+                    infoDiv.appendChild(toolSpan);
+                }
+                
+                if (metadata.timestamp) {
+                    const timeSpan = document.createElement('span');
+                    timeSpan.textContent = new Date(metadata.timestamp).toLocaleTimeString();
+                    infoDiv.appendChild(timeSpan);
+                }
+                
+                contentDiv.appendChild(infoDiv);
+            }
+            
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
         }
 
-        // Initialize dashboard when page loads
-        window.addEventListener('load', initializeDashboard);
+        // Format message content
+        function formatMessageContent(content) {
+            // Convert line breaks to HTML
+            content = content.replace(/\n/g, '<br>');
+            
+            // Make model names bold
+            content = content.replace(/\b(i20|creta|alcazar|venue|aura|nios)\b/gi, '<strong>$1</strong>');
+            
+            // Make prices stand out
+            content = content.replace(/₹[\d,]+/g, '<strong style="color: #4CAF50;">$&</strong>');
+            
+            // Make categories bold
+            content = content.replace(/\b(Interiors|Exteriors|Electronics|Common)\b/gi, '<strong style="color: #667eea;">$1</strong>');
+            
+            return content;
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            isTyping = true;
+            sendButton.disabled = true;
+            
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot';
+            typingDiv.id = 'typingIndicator';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+            
+            const typingContent = document.createElement('div');
+            typingContent.className = 'typing-indicator';
+            typingContent.style.display = 'block';
+            typingContent.innerHTML = `
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            
+            typingDiv.appendChild(avatar);
+            typingDiv.appendChild(typingContent);
+            messagesContainer.appendChild(typingDiv);
+            scrollToBottom();
+        }
+
+        // Hide typing indicator
+        function hideTypingIndicator() {
+            isTyping = false;
+            sendButton.disabled = false;
+            
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Scroll to bottom
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Reset conversation - UPDATED WITH RELATIVE URL
+        async function resetConversation() {
+            try {
+                const response = await fetch('/api/reset', { method: 'POST' });
+                if (response.ok) {
+                    messagesContainer.innerHTML = `
+                        <div class="welcome-message">
+                            <p>👋 Conversation reset! Let's start fresh.</p>
+                            <p>Tell me your car model and year to get started!</p>
+                            <div class="quick-actions">
+                                <div class="quick-action" onclick="sendQuickMessage('I have an i20 2024')">i20 2024</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Show me Creta accessories')">Creta accessories</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Alcazar 2023')">Alcazar 2023</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Venue accessories')">Venue accessories</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Aura 2024')">Aura 2024</div>
+                                <div class="quick-action" onclick="sendQuickMessage('Nios accessories')">Nios accessories</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Reset failed:', error);
+                addMessage('Failed to reset conversation. Please refresh the page.', 'bot', { error: true });
+            }
+        }
+
+        // Periodic health check
+        setInterval(checkServerStatus, 30000); // Check every 30 seconds
     </script>
 </body>
 </html>
